@@ -1,9 +1,11 @@
 #!/bin/bash
 
+# Config
 DEPOSIT=0
 CHAIN=mainnet
 MINETHEREUM=0.1
 
+# Function which checks exit status and stops execution
 function checkExitStatus() {
   if [ $1 -eq 0 ]; then
     echo OK
@@ -14,15 +16,18 @@ function checkExitStatus() {
   fi
 }
 
+# Creating iexec alias
 shopt -s expand_aliases
 alias iexec='docker run -e DEBUG=$DEBUG --interactive --tty --rm -v $(pwd):/iexec-project -w /iexec-project iexechub/iexec-sdk'
 
 echo "Welcome to iExec worker"
 echo "Checking files..."
 
+# Checking containers
 RUNNINGWORKERS=$(docker ps --format '{{.Image}} {{.ID}}')
 STOPPEDWORKERS=$(docker ps --filter "status=exited" --format '{{.Image}} {{.ID}}')
 
+# Checking wallet file
 if [ ! -f /home/iexec/Desktop/iExec/encrypted-wallet.json ] || [ $(cat /home/iexec/Desktop/iExec/encrypted-wallet.json | wc -c) -eq 0 ]; then
       echo "Wallet not found or empty! (iExec/encrypted-wallet.json)"
       echo "Please check your wallet in iExec directory."
@@ -30,6 +35,7 @@ if [ ! -f /home/iexec/Desktop/iExec/encrypted-wallet.json ] || [ $(cat /home/iex
       exit 1
 fi
 
+# If container was stopped relaunching it and attaching to container
 if [ ! -z "${STOPPEDWORKERS}" ]; then
   echo "Stopped worker detected."
   echo "Launching stopped worker."
@@ -41,12 +47,15 @@ else
     echo "Attaching to running container"
     docker container attach $(echo $RUNNINGWORKERS | awk '{print $2}')
   else
+    # Get worker name
     while [[ ! $workerName =~ ^[-_A-Za-z0-9]+$ ]]; do
       read -p "Enter worker name [only letters, numbers, - and _ symbols]: " workerName
     done
 
+    # Get wallet password
     read -p "Enter wallet password: " password
 
+    # iexec init sdk environment
     cd /home/iexec/Desktop/iExec;
     rm -f chain.json wallet.json
     iexec init
@@ -61,17 +70,22 @@ else
 
     iexec wallet show --chain $CHAIN
 
+    # Get wallet and account info
     ETHEREUM=$(iexec wallet show --chain $CHAIN | grep ETH | awk '{print $3}' | sed 's/[^0-9.]*//g')
     STAKE=$(iexec account show --chain $CHAIN | grep stake | awk '{print $3}' | sed 's/[^0-9]*//g')
 
+    # Checking minimum ethereum
     if [ $(echo $ETHEREUM'<'$MINETHEREUM | bc -l) -ne 0 ]; then
       echo "You need to have $MINETHEREUM ETH to launch iExec worker. But you only have $ETHEREUM ETH."
       read -p "Press [Enter] to exit..."
       exit 1
     fi
 
+    # Checking deposit
     if [ $STAKE -lt $DEPOSIT ]; then
       TODEPOSIT=$(($DEPOSIT - $STAKE))
+
+      # Ask for deposit agreement
       while [ "$answer" != "yes" ] && [ "$answer" != "no" ]; do
         read -p "To participate you need to deposit $TODEPOSIT nRLC. Do you agree? [yes/no] " answer
       done
@@ -81,12 +95,14 @@ else
         exit 1
       fi
 
+      # Deposit
       iexec account deposit $TODEPOSIT --chain $CHAIN
       checkExitStatus $? "Failed to depoit."
     else
       echo "You don't need to stake. Your stake is $STAKE."
     fi
 
+    # Get last version and run worker
     echo "Starting iExec worker..."
     docker pull iexechub/worker:latest
     docker run --hostname $workerName \
@@ -95,9 +111,9 @@ else
              --env LOGIN=worker \
              --env PASSWORD=K2ovTKF6mfHbDx5kDsyi \
              --env LOGGERLEVEL=INFO \
-       --env SHAREDPACKAGES= \
-       --env SANDBOXENABLED=true \
-       --env BLOCKCHAINETHENABLED=true \
+             --env SHAREDPACKAGES= \
+             --env SANDBOXENABLED=true \
+             --env BLOCKCHAINETHENABLED=true \
              --env SHAREDAPPS=docker \
              --env TMPDIR=/tmp/iexec-worker-drop \
              --env WALLETPASSWORD=$password \
