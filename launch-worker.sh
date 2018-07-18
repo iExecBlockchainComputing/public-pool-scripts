@@ -3,7 +3,7 @@
 # Config
 DEPOSIT=0
 CHAIN=mainnet
-MINETHEREUM=0.1
+MINETHEREUM=0.05
 
 # Function which checks exit status and stops execution
 function checkExitStatus() {
