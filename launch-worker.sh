@@ -21,15 +21,21 @@ echo "Checking connection..."
 if ping -c 1 google.com &> /dev/null; then
   echo "Connection is ok."
 else
-  echo "Changing docker mirror..."
-  sudo mkdir -p /etc/docker
-  sudo tee /etc/docker/daemon.json <<-'EOF'
+  while [ "$answerdocker" != "yes" ] && [ "$answerdocker" != "no" ]; do
+    read -p "Are you from China? [yes/no] " answerdocker
+  done
+
+  if [ "$answerdocker" == "yes" ]; then
+    echo "Changing docker mirror..."
+    sudo mkdir -p /etc/docker
+    sudo tee /etc/docker/daemon.json <<-'EOF'
 {
  "registry-mirrors": ["https://registry.docker-cn.com"]
 }
 EOF
-  sudo systemctl daemon-reload
-  sudo systemctl restart docker
+    sudo systemctl daemon-reload
+    sudo systemctl restart docker
+  fi
 fi
 
 # Creating iexec alias
