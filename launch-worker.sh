@@ -3,7 +3,7 @@
 # Config
 DEPOSIT=0
 CHAIN=mainnet
-MINETHEREUM=0.2
+MINETHEREUM=0.18
 
 # Function which checks exit status and stops execution
 function checkExitStatus() {
@@ -102,7 +102,7 @@ else
 
     # Checking minimum ethereum
     if [ $(echo $ETHEREUM'<'$MINETHEREUM | bc -l) -ne 0 ]; then
-      echo "You need to have $MINETHEREUM ETH to launch iExec worker. But you only have $ETHEREUM ETH."
+      echo "You need to have 0.2 ETH to launch iExec worker. But you only have $ETHEREUM ETH."
       read -p "Press [Enter] to exit..."
       exit 1
     fi
