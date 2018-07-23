@@ -27,6 +27,7 @@ else
 
   if [ "$answerdocker" == "yes" ]; then
     echo "Changing docker mirror..."
+    echo "Sudo password is \"iexec\"."
     sudo mkdir -p /etc/docker
     sudo tee /etc/docker/daemon.json <<-'EOF'
 {
