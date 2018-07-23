@@ -16,12 +16,31 @@ function checkExitStatus() {
   fi
 }
 
+# Checking connection and changing docker mirror if necessary
+echo "Checking connection..."
+if ping -c 1 google.com &> /dev/null; then
+  echo "Connection is ok."
+else
+  echo "Changing docker mirror..."
+  sudo mkdir -p /etc/docker
+  sudo tee /etc/docker/daemon.json <<-'EOF'
+{
+ "registry-mirrors": ["https://cn4zicmw.mirror.aliyuncs.com"]
+}
+EOF
+  sudo systemctl daemon-reload
+  sudo systemctl restart docker
+fi
+
 # Creating iexec alias
 shopt -s expand_aliases
 alias iexec='docker run -e DEBUG=$DEBUG --interactive --tty --rm -v $(pwd):/iexec-project -w /iexec-project iexechub/iexec-sdk'
 
 echo "Welcome to iExec worker"
 echo "Checking files..."
+
+# Pulling iexec sdk
+docker pull iexechub/iexec-sdk
 
 # Checking containers
 RUNNINGWORKERS=$(docker ps --format '{{.Image}} {{.ID}}')
