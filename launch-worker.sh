@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Config
-DEPOSIT=0
+DEPOSIT=5000000000
 CHAIN=mainnet
-MINETHEREUM=0.18
+MINETHEREUM=0.2
 
 # Function which checks exit status and stops execution
 function checkExitStatus() {
@@ -88,7 +88,7 @@ else
     checkExitStatus $? "Failed to execute iexec init"
     rm -f iexec.json account.json wallet.json
 
-    iexec wallet decrypt --password $password
+    iexec wallet decrypt --password "$password"
     checkExitStatus $? "Unable to decrypt wallet."
 
     iexec account login --chain $CHAIN
@@ -131,18 +131,18 @@ else
     # Get last version and run worker
     echo "Starting iExec worker..."
     docker pull iexechub/worker:latest
-    docker run --hostname $workerName \
-             --env SCHEDULER_DOMAIN=api-workerdrop-pool.iex.ec \
-             --env SCHEDULER_IP=52.52.233.12 \
-             --env LOGIN=worker \
-             --env PASSWORD=K2ovTKF6mfHbDx5kDsyi \
-             --env LOGGERLEVEL=INFO \
-             --env SHAREDPACKAGES= \
-             --env SANDBOXENABLED=true \
-             --env BLOCKCHAINETHENABLED=true \
-             --env SHAREDAPPS=docker \
-             --env TMPDIR=/tmp/iexec-worker-drop \
-             --env WALLETPASSWORD=$password \
+    docker run --hostname "$workerName" \
+             --env "SCHEDULER_DOMAIN=api-workerdrop-pool.iex.ec" \
+             --env "SCHEDULER_IP=52.52.233.12" \
+             --env "LOGIN=worker" \
+             --env "PASSWORD=K2ovTKF6mfHbDx5kDsyi" \
+             --env "LOGGERLEVEL=INFO" \
+             --env "SHAREDPACKAGES=" \
+             --env "SANDBOXENABLED=true" \
+             --env "BLOCKCHAINETHENABLED=true" \
+             --env "SHAREDAPPS=docker" \
+             --env "TMPDIR=/tmp/iexec-worker-drop" \
+             --env "WALLETPASSWORD=$password" \
              -v /home/iexec/Desktop/iExec/encrypted-wallet.json:/iexec/wallet/wallet_worker.json \
              -v /var/run/docker.sock:/var/run/docker.sock \
              -v /tmp/iexec-worker-drop:/tmp/iexec-worker-drop \
