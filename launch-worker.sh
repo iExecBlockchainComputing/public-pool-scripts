@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Config
-DEPOSIT=5000000000
+DEPOSIT=10000000000
 CHAIN=mainnet
 MINETHEREUM=0.2
 
