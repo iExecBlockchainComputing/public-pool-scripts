@@ -101,7 +101,7 @@ else
     STAKE=$(iexec account show --chain $CHAIN | grep stake | awk '{print $3}' | sed 's/[^0-9]*//g')
 
     # Checking minimum ethereum
-    if [ $(echo $ETHEREUM'<'$MINETHEREUM | bc -l) -ne 0 ]; then
+    if [ $(echo $ETHEREUM'<0.18' | bc -l) -ne 0 ]; then
       echo "You need to have 0.2 ETH to launch iExec worker. But you only have $ETHEREUM ETH."
       read -p "Press [Enter] to exit..."
       exit 1
