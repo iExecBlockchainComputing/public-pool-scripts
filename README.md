@@ -25,6 +25,10 @@ TO complete
 
 To see RLC deposit balance and rewards :
 https://etherscan.io/address/0x0d5ef019ca4c5cc413ee892ced89d7107c5f424d#readContract
+
+scroll down to :
 7. checkBalance
-put your worker adrress
-and click query
+
+- Put your worker address in _owner (address)
+
+and click : Query
