@@ -10,7 +10,7 @@
 ```
 iexec wallet show --chain mainnet
 ```
-- To RLC deposit balance and rewards 
+- To see RLC deposit balance and rewards 
 ```
 iexec account show --chain mainnet
 ```
