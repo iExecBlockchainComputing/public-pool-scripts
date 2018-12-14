@@ -2,7 +2,7 @@
 
 
 
-# How to see my worker balances with VM and iexec-sdk ?
+# Option A : How to see my worker balances with VM and iexec-sdk ?
 
 - In the VM desktop, enter the folder iExec
 - Right click. "Open in Teminal"
@@ -15,12 +15,7 @@ iexec wallet show --chain mainnet
 iexec account show --chain mainnet
 ```
 
-
-# How to see my worker balances with Account interface ?
-
-TO complete
-
-# How to see my worker balances with etherescan ?
+# Option B :How to see my worker balances with etherescan ?
  To see your RLC balance . As usual in etherescan 
 
 To see RLC deposit balance and rewards :
@@ -32,3 +27,7 @@ scroll down to :
 - Put your worker address in _owner (address)
 
 and click : Query
+
+# Option C: How to see my worker balances with Account interface ?
+
+TO complete
