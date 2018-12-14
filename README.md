@@ -15,6 +15,14 @@ iexec wallet show --chain mainnet
 iexec account show --chain mainnet
 ```
 
+You will notice 2 differents lines for the account balance. ‘Stake’ and ‘Locked’.
+
+Stake balance can be withdrawn from marketplace and received as ERC20 RLC as you know it. This ‘Stake’ balance can be used either to stake or to pay for executions and is the balance increased when you make a deposit.
+
+When workers place their stake to execute a task, ‘Stake’ balance decreases and ‘Locked’ balance increases accordingly.
+
+These funds are locked until the work order is complete. When the work order is completed (and PoCo consensus is achieved), ‘Locked ’balance of the user is seized and the stake balance of contributors (workers) is increased, according to smart contract rewards distributions rules.
+
 # Option B :How to see my worker balances with etherescan ?
  To see your RLC balance . As usual in etherescan 
 
