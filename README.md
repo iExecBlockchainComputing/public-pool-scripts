@@ -36,6 +36,6 @@ scroll down to :
 
 and click : Query
 
-# Option C: How to see my worker balances with Account interface ?
+# Option C: How to see my worker balances with iExec Account interface ?
 
 TO complete
