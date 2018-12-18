@@ -3,10 +3,15 @@
 # I see transactions who is who? with the first 8 digit you can guess :
 
 0x0c6e29e3 => subscribetopool
+
 0x7c609885 => allowworkersToConteribute
+
 0x031ee1c8 => contribute 
+
 0x16ebf77d => revealConsensus
+
 0x5a628525 => reveal
+
 0x06021e7e => finalized
 
 More details of thoses functions here :
