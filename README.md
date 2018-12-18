@@ -38,7 +38,7 @@ and click : Query
 
 ## Option C: How to see my worker balances with iExec Account interface ?
 
-instrauctions TO DO
+Instructions TODO
 
 
 # How to withdraw my rewards ? 
