@@ -60,3 +60,20 @@ Instructions TODO
 # How to withdraw my rewards ? 
 
 Just click on "Stop worker" Icon in the desktop VM. It will ask you to withdraw if you have any rewards or balances. See iexec-sdk withdraw code used [here](https://github.com/iExecBlockchainComputing/workerdrop-scripts-public/blob/master/stop-worker.sh#L33) 
+
+
+
+# How to see my worker score with etherscan ?
+
+go :
+https://etherscan.io/address/0x0d5ef019ca4c5cc413ee892ced89d7107c5f424d#readContract
+
+scroll down to :
+7. m_scores
+
+- Put your worker address in _owner (address)
+
+and click : Query
+
+# rewards distribution according to score : 
+https://github.com/iExecBlockchainComputing/PoCo/blob/master/contracts/WorkerPool.sol#L416
