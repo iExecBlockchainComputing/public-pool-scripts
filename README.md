@@ -23,7 +23,7 @@ When workers place their stake to execute a task, ‘Stake’ balance decreases 
 
 These funds are locked until the work order is complete. When the work order is completed (and PoCo consensus is achieved), ‘Locked ’balance of the user is seized and the stake balance of contributors (workers) is increased, according to smart contract rewards distributions rules.
 
-# Option B :How to see my worker balances with etherescan ?
+# Option B :How to see my worker balances with etherscan ?
  To see your RLC balance . As usual in etherescan 
 
 To see RLC deposit balance and rewards :
