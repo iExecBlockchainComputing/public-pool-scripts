@@ -38,9 +38,9 @@ and click : Query
 
 ## Option C: How to see my worker balances with iExec Account interface ?
 
-TO complete
+instrauctions TO DO
 
 
 # How to withdraw my rewards ? 
 
-Just click on "Stop worker" Icon in the desktop VM. It will ask you to withdraw if you have any rewards or balances. See iexec-sdk withdraw code used[here](https://github.com/iExecBlockchainComputing/workerdrop-scripts-public/blob/master/stop-worker.sh#L33) 
+Just click on "Stop worker" Icon in the desktop VM. It will ask you to withdraw if you have any rewards or balances. See iexec-sdk withdraw code used [here](https://github.com/iExecBlockchainComputing/workerdrop-scripts-public/blob/master/stop-worker.sh#L33) 
