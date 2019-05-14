@@ -215,7 +215,7 @@ else
                 checkExitStatus $? "Can't init iexec sdk."
 
                 message "INFO" "Checking wallet password."
-                iexec wallet show --wallet-address $WALLET_ADDR --password "$WORKERWALLETPASSWORD" --chain $CHAIN
+                iexec wallet show --wallet-file $(basename $WALLET_FILE) --password "$WORKERWALLETPASSWORD" --chain $CHAIN
                 checkExitStatus $? "Invalid wallet password."
                 break;
             fi
@@ -285,11 +285,11 @@ else
     checkExitStatus $? "Can't place hub address."
 
     message "INFO" "Getting wallet info."
-    WALLETINFO=$(iexec wallet show --raw --wallet-address $WALLET_ADDR --password "$WORKERWALLETPASSWORD" --chain $CHAIN)
+    WALLETINFO=$(iexec wallet show --raw --wallet-file $(basename $WALLET_FILE) --password "$WORKERWALLETPASSWORD" --chain $CHAIN)
     checkExitStatus $? "Can't get wallet info."
 
     message "INFO" "Getting account info."
-    ACCOUNTINFO=$(iexec account show --raw --wallet-address $WALLET_ADDR --password "$WORKERWALLETPASSWORD" --chain $CHAIN)
+    ACCOUNTINFO=$(iexec account show --raw --wallet-file $(basename $WALLET_FILE) --password "$WORKERWALLETPASSWORD" --chain $CHAIN)
     checkExitStatus $? "Can't get account info."
 
     # Getting necessary values
@@ -327,7 +327,7 @@ else
       fi
 
       # Deposit
-      iexec account deposit $TODEPOSIT --wallet-address $WALLET_ADDR --password "$WORKERWALLETPASSWORD"
+      iexec account deposit $TODEPOSIT --wallet-file $(basename $WALLET_FILE) --password "$WORKERWALLETPASSWORD"
       checkExitStatus $? "Failed to depoit."
     else
       message "OK" "You don't need to stake. Your stake is $STAKE."
