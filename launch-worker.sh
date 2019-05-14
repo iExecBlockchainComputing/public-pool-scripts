@@ -188,6 +188,11 @@ else
 
     for ((i=${#files[@]}-1; i>=0; i--)); do
 
+        if [ $(cat ${files[$i]}) = "PASTE_YOUR_WALLET_HERE" ]; then
+           echo "[INFO] Skipping wallet.json"
+           continue
+        fi
+
         # If a wallet was found
         if [[ -f ${files[$i]} ]]; then
             message "INFO" "Found wallet in ${files[$i]}"
