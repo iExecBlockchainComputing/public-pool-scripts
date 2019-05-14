@@ -40,6 +40,7 @@ if [ "$1" == "--remove" ]; then
     removeWorker
     checkExitStatus $? "Unable to remove $WORKER_POOLNAME worker."
     message "INFO" "To start a new worker please relaunch the script."
+    read -p "Press [Enter] to exit..."
     exit 1
 fi
 
@@ -258,10 +259,12 @@ else
             message "INFO" "A wallet with address $WALLET_ADDR was created in $WALLET_FILE."
 
             message "INFO" "Please fill your wallet with minimum $MINETHEREUM ETH and $DEPOSIT nRLC. Then relaunch the script."
+            read -p "Press [Enter] to exit..."
             exit 1
 
         else
             message "INFO" "You cannot launch a worker without a wallet. Exiting..."
+            read -p "Press [Enter] to exit..."
             exit 1
         fi
     fi
