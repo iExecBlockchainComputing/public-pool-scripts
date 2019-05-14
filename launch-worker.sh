@@ -1,33 +1,117 @@
 #!/bin/bash
 
-# Config
-DEPOSIT=0
+# Variables
+WORKER_POOLNAME=public
+DEPOSIT=5000000000
 CHAIN=mainnet
-MINETHEREUM=0.2
+MINETHEREUM=0.5
+HUBCONTRACT=0xb3901d04CF645747b99DBbe8f2eE9cb41A89CeBF
+WORKER_DOCKER_IMAGE_VERSION=3.0.0
+IEXEC_CORE_HOST=public-pool.iex.ec
+IEXEC_CORE_PORT=18090
+IEXEC_SDK_VERSION=latest
 
-# Function which checks exit status and stops execution
-function checkExitStatus() {
-  if [ $1 -eq 0 ]; then
-    echo OK
-  else
-    echo $2
+# Function that prints messages
+function message() {
+  echo "[$1] $2"
+  if [ "$1" == "ERROR" ]; then
     read -p "Press [Enter] to exit..."
     exit 1
   fi
 }
 
+# Function which checks exit status and stops execution
+function checkExitStatus() {
+  if [ $1 -eq 0 ]; then
+    message "OK" ""
+  else
+    message "ERROR" "$2"
+  fi
+}
+
+# Remove worker function
+function removeWorker(){
+    message "INFO" "Removing worker."
+    docker rm -f "$WORKER_POOLNAME-worker"
+}
+
+# Remove worker option
+if [ "$1" == "--remove" ]; then
+    removeWorker
+    checkExitStatus $? "Unable to remove $WORKER_POOLNAME worker."
+    message "INFO" "To start a new worker please relaunch the script."
+    exit 1
+fi
+
+# Update worker option
+if [ "$1" == "--update" ]; then
+    message "INFO" "Updating worker."
+    removeWorker
+    message "INFO" "Starting a new worker."
+fi
+
+# Determine OS platform
+message "INFO" "Detecting OS platform..."
+UNAME=$(uname | tr "[:upper:]" "[:lower:]")
+
+# If Linux, try to determine specific distribution
+if [ "$UNAME" == "linux" ]; then
+  # If available, use LSB to identify distribution
+  if [ -f /etc/lsb-release -o -d /etc/lsb-release.d ]; then
+      DISTRO=$(lsb_release -i | cut -d: -f2 | sed s/'^\t'//)
+  # Otherwise, use release info file
+  else
+      DISTRO=$(ls -d /etc/[A-Za-z]*[_-][rv]e[lr]* | grep -v "lsb" | cut -d'/' -f3 | cut -d'-' -f1 | cut -d'_' -f1 | head -n 1)
+  fi
+fi
+
+# For everything else (or if above failed), just use generic identifier
+[ "$DISTRO" == "" ] && DISTRO=$UNAME
+
+# Check if OS platform is supported
+if [ "$DISTRO" != "Ubuntu" ] && [ "$DISTRO" != "darwin" ] && [ "$DISTRO" != "centos" ]; then
+  message "ERROR" "Only Ubuntu OS and MacOS platform is supported for now. Your platform is: $DISTRO"
+else
+  message "OK" "Detected supported OS platform [$DISTRO] ..."
+fi
+
+# Launch iexec sdk function
+function iexec {
+  if [ "$DISTRO" != "darwin" ]; then
+    docker run -e DEBUG=$DEBUG --interactive --tty --rm -v /tmp:/tmp -v $(pwd):/iexec-project -v /home/$(whoami)/.ethereum/keystore:/home/node/.ethereum/keystore -w /iexec-project iexechub/iexec-sdk:$IEXEC_SDK_VERSION "$@"
+  else
+    docker run -e DEBUG=$DEBUG --interactive --tty --rm -v /tmp:/tmp -v $(pwd):/iexec-project -v /Users/$(whoami)/Library/Ethereum/keystore:/home/node/.ethereum/keystore -w /iexec-project iexechub/iexec-sdk:$IEXEC_SDK_VERSION "$@"
+  fi
+}
+
+# Check if docker is installed
+message "INFO" "Checking if docker is installed..."
+which docker >/dev/null 2>/dev/null
+if [ $? -eq 0 ]
+then
+    (docker --version | grep "Docker version")>/dev/null  2>/dev/null
+    if [ $? -eq 0 ]
+    then
+        message "OK" "Docker is installed."
+    else
+        message "ERROR" "Docker is not installed at your system. Please install it."
+    fi
+else
+    message "ERROR" "Docker is not installed at your system. Please install it."
+fi
+
 # Checking connection and changing docker mirror if necessary
-echo "Checking connection..."
+message "INFO" "Checking connection [trying to contact google.com] ..."
+
 if ping -c 1 google.com &> /dev/null; then
-  echo "Connection is ok."
+  message "OK" "Connection is ok."
 else
   while [ "$answerdocker" != "yes" ] && [ "$answerdocker" != "no" ]; do
     read -p "Are you from China? [yes/no] " answerdocker
   done
 
   if [ "$answerdocker" == "yes" ]; then
-    echo "Changing docker mirror..."
-    echo "Sudo password is \"iexec\"."
+    message "INFO" "Changing docker mirror..."
     sudo mkdir -p /etc/docker
     sudo tee /etc/docker/daemon.json <<-'EOF'
 {
@@ -39,77 +123,194 @@ EOF
   fi
 fi
 
-# Creating iexec alias
-shopt -s expand_aliases
-alias iexec='docker run -e DEBUG=$DEBUG --interactive --tty --rm -v $(pwd):/iexec-project -w /iexec-project iexechub/iexec-sdk'
-
-echo "Welcome to iExec worker"
-echo "Checking files..."
-
-# Pulling iexec sdk
-docker pull iexechub/iexec-sdk
-
 # Checking containers
-RUNNINGWORKERS=$(docker ps --format '{{.Image}} {{.ID}}')
-STOPPEDWORKERS=$(docker ps --filter "status=exited" --format '{{.Image}} {{.ID}}')
+RUNNINGWORKERS=$(docker ps --format '{{.ID}}' --filter="name=$WORKER_POOLNAME-worker")
+STOPPEDWORKERS=$(docker ps --filter "status=exited" --format '{{.ID}}' --filter="name=$WORKER_POOLNAME-worker")
 
-# Checking wallet file
-if [ ! -f /home/iexec/Desktop/iExec/encrypted-wallet.json ] || [ $(cat /home/iexec/Desktop/iExec/encrypted-wallet.json | wc -c) -eq 0 ]; then
-      echo "Wallet not found or empty! (iExec/encrypted-wallet.json)"
-      echo "Please check your wallet in iExec directory."
-      read -p "Press [Enter] to exit..."
-      exit 1
-fi
+# If worker is already running we will just attach to it
+if [ ! -z "${RUNNINGWORKERS}" ]; then
 
-# If container was stopped relaunching it and attaching to container
-if [ ! -z "${STOPPEDWORKERS}" ]; then
-  echo "Stopped worker detected."
-  echo "Launching stopped worker."
-  docker start $(echo $STOPPEDWORKERS | awk '{print $2}')
-  docker container attach $(echo $STOPPEDWORKERS | awk '{print $2}')
-else
-  if [ ! -z "${RUNNINGWORKERS}" ]; then
-    echo "iExec worker is already running at your machine..."
-    echo "Attaching to running container"
-    docker container attach $(echo $RUNNINGWORKERS | awk '{print $2}')
-  else
-    # Get worker name
-    while [[ ! $workerName =~ ^[-_A-Za-z0-9]+$ ]]; do
-      read -p "Enter worker name [only letters, numbers, - and _ symbols]: " workerName
+    message "INFO" "iExec $WORKER_POOLNAME worker is already running at your machine..."
+
+    # Attach to worker container
+    while [ "$attachworker" != "yes" ] && [ "$attachworker" != "no" ]; do
+      read -p "Do you want to attach to your worker? [yes/no] " attachworker
     done
 
-    # Get wallet password
-    read -p "Enter wallet password: " password
+    if [ "$attachworker" == "yes" ]; then
+      message "INFO" "Attaching to worker container."
+      docker container attach $(echo $RUNNINGWORKERS)
+    fi
 
-    # iexec init sdk environment
-    cd /home/iexec/Desktop/iExec;
-    rm -f chain.json wallet.json
-    iexec init
-    checkExitStatus $? "Failed to execute iexec init"
-    rm -f iexec.json account.json wallet.json
+elif [ ! -z "${STOPPEDWORKERS}" ]; then
 
-    iexec wallet decrypt --password "$password"
-    checkExitStatus $? "Unable to decrypt wallet."
+    message "INFO" "Stopped $WORKER_POOLNAME worker detected."
 
-    iexec account login --chain $CHAIN
-    checkExitStatus $? "Failed to login."
+    # Relaunch worker container
+    while [ "$relaunchworker" != "yes" ] && [ "$relaunchworker" != "no" ]; do
+      read -p "Do you want to relauch stopped worker? [yes/no] " relaunchworker
+    done
 
-    iexec wallet show --chain $CHAIN
+    if [ "$relaunchworker" == "yes" ]; then
+        message "INFO" "Relaunching stopped worker."
+        docker start $(echo $STOPPEDWORKERS)
+        message "INFO" "Worker was sucessfully started."
 
-    # Get wallet and account info
-    ETHEREUM=$(iexec wallet show --chain $CHAIN | grep ETH | awk '{print $3}' | sed 's/[^0-9.]*//g')
-    STAKE=$(iexec account show --chain $CHAIN | grep stake | awk '{print $3}' | sed 's/[^0-9]*//g')
+        # Attach to worker container
+        while [ "$attachworker" != "yes" ] && [ "$attachworker" != "no" ]; do
+          read -p "Do you want to attach to your worker? [yes/no] " attachworker
+        done
+
+        if [ "$attachworker" == "yes" ]; then
+          message "INFO" "Attaching to worker container."
+          docker container attach $(echo $STOPPEDWORKERS)
+        fi
+    fi
+
+else
+
+    # Pulling iexec sdk
+    message "INFO" "Pulling iexec sdk..."
+    docker pull iexechub/iexec-sdk:$IEXEC_SDK_VERSION
+    checkExitStatus $? "Failed to pull image. Check docker service state or if user has rights to launch docker commands."
+
+    # Looping over wallet files in inverse order (from the most recent to older one)
+    WALLET_SELECTED=0
+
+    if [ "$DISTRO" == "darwin" ]; then
+        files=(/Users/$(whoami)/Library/Ethereum/keystore/*)
+    else
+        files=(/home/$(whoami)/.ethereum/keystore/*)
+    fi
+
+    for ((i=${#files[@]}-1; i>=0; i--)); do
+
+        # If a wallet was found
+        if [[ -f ${files[$i]} ]]; then
+            message "INFO" "Found wallet in ${files[$i]}"
+            # Extracting wallet address
+            WALLET_ADDR=$(cat ${files[$i]} | awk -v RS= '{$1=$1}1' | tr -d "[:space:]" | sed -E "s/.*\"address\":\"([a-zA-Z0-9]+)\".*/\1/g")
+
+            while [ "$answerwalletuse" != "yes" ] && [ "$answerwalletuse" != "no" ]; do
+                read -p "Do you want to use wallet 0x$WALLET_ADDR? [yes/no] " answerwalletuse
+            done
+
+            # If user selects a wallet
+            if [ "$answerwalletuse" == "yes" ]; then
+
+                # Get wallet password and check it with iExec SDK
+                read -p "Please provide the password of wallet $WALLET_ADDR: " WORKERWALLETPASSWORD
+                WALLET_FILE=${files[$i]}
+                WALLET_SELECTED=1
+
+                rm -fr /tmp/iexec
+                mkdir /tmp/iexec
+                cd /tmp/iexec
+
+                message "INFO" "Initializing SDK."
+                iexec init --skip-wallet --force
+                checkExitStatus $? "Can't init iexec sdk."
+
+                message "INFO" "Checking wallet password."
+                iexec wallet show --wallet-address $WALLET_ADDR --password "$WORKERWALLETPASSWORD" --chain $CHAIN
+                checkExitStatus $? "Invalid wallet password."
+                break;
+            fi
+
+            unset answerwalletuse
+        fi
+    done
+
+    # If no wallet was selected
+    if [ "$WALLET_SELECTED" == 0 ]; then
+
+        message "INFO" "No wallet was selected."
+        while [ "$answerwalletcreate" != "yes" ] && [ "$answerwalletcreate" != "no" ]; do
+            read -p "Do you want to create a wallet? [yes/no] " answerwalletcreate
+        done
+
+        # If user accepts to create a wallet
+        if [ "$answerwalletcreate" == "yes" ]; then
+
+            # Get wallet password
+            read -p "Please provide a password to create an encrypted wallet: " WORKERWALLETPASSWORD
+            rm -fr /tmp/iexec
+            mkdir /tmp/iexec
+            cd /tmp/iexec
+
+            message "INFO" "Getting created wallet info."
+            IEXEC_INIT_RESULT=$(iexec init --force --raw --password "$WORKERWALLETPASSWORD")
+            checkExitStatus $? "Can't create a wallet. Failed init."
+
+
+            # Get wallet address and wallet file path
+            WALLET_ADDR=$(echo $IEXEC_INIT_RESULT | sed -E "s/.*\"walletAddress\":\"([0-9a-zA-Z]+)\".*/\1/g")
+            WALLET_FILE=$(echo $IEXEC_INIT_RESULT | sed -E "s/.*\"walletFile\":\"([0-9a-zA-Z\/.-]+)\".*/\1/g")
+            # Replacing node home with current user home
+            if [ "$DISTRO" == "darwin" ]; then
+                WALLET_FILE=$(echo $WALLET_FILE | sed "s/home\/node\/\.ethereum/Users\/$(whoami)\/Library\/Ethereum/g")
+            else
+                WALLET_FILE=$(echo $WALLET_FILE | sed "s/node/$(whoami)/g")
+            fi
+
+            message "INFO" "A wallet with address $WALLET_ADDR was created in $WALLET_FILE."
+
+            message "INFO" "Please fill your wallet with minimum $MINETHEREUM ETH and $DEPOSIT nRLC. Then relaunch the script."
+            exit 1
+
+        else
+            message "INFO" "You cannot launch a worker without a wallet. Exiting..."
+            exit 1
+        fi
+    fi
+
+    echo "WALLET FILE: $WALLET_FILE"
+
+    message "INFO" "The wallet $WALLET_ADDR with password $WORKERWALLETPASSWORD and path $WALLET_FILE will be used..."
+
+    message "INFO" "Checking wallet balances."
+
+    message "INFO" "Init iExec SDK."
+    iexec init --force --skip-wallet
+    checkExitStatus $? "Can't init iexec sdk."
+
+    message "INFO" "Adding Hub Contract address."
+    sed -i'.temp' -E "s/(\"id\": \"42\")/\1\,\ \"hub\":\"$HUBCONTRACT\"/g" chain.json
+
+    checkExitStatus $? "Can't place hub address."
+
+    message "INFO" "Getting wallet info."
+    WALLETINFO=$(iexec wallet show --raw --wallet-address $WALLET_ADDR --password "$WORKERWALLETPASSWORD" --chain $CHAIN)
+    checkExitStatus $? "Can't get wallet info."
+
+    message "INFO" "Getting account info."
+    ACCOUNTINFO=$(iexec account show --raw --wallet-address $WALLET_ADDR --password "$WORKERWALLETPASSWORD" --chain $CHAIN)
+    checkExitStatus $? "Can't get account info."
+
+    # Getting necessary values
+    ETHEREUM=$(echo $WALLETINFO | sed -E "s/.*\"ETH\":\"([0-9.]+)\".*/\1/g")
+    NRLC=$(echo $WALLETINFO | sed -E "s/.*\"nRLC\":\"([0-9.]+)\".*/\1/g")
+    STAKE=$(echo $ACCOUNTINFO | sed -E "s/.*\"stake\":\"([0-9.]+)\".*/\1/g")
+
+    # Showing balances
+    message "INFO" "Ethereum balance is $ETHEREUM ETH."
+    message "INFO" "Stake amount is $STAKE nRLC."
 
     # Checking minimum ethereum
-    if [ $(echo $ETHEREUM'<0.18' | bc -l) -ne 0 ]; then
-      echo "You need to have 0.2 ETH to launch iExec worker. But you only have $ETHEREUM ETH."
-      read -p "Press [Enter] to exit..."
-      exit 1
+    if [ $(echo $ETHEREUM'<'$MINETHEREUM | bc -l) -ne 0 ]; then
+      message "ERROR" "You need to have $MINETHEREUM ETH to launch iExec worker. Your balance is $ETHEREUM ETH."
+    fi
+
+    # Calculate amount to deposit
+    TODEPOSIT=$(($DEPOSIT - $STAKE))
+
+    # Checking if wallet has enough nRLC to deposit
+    if [ $NRLC -lt $TODEPOSIT ]; then
+      message "ERROR" "You need to have $TODEPOSIT nRLC to make a deposit. But you have only $NRLC nRLC."
     fi
 
     # Checking deposit
     if [ $STAKE -lt $DEPOSIT ]; then
-      TODEPOSIT=$(($DEPOSIT - $STAKE))
 
       # Ask for deposit agreement
       while [ "$answer" != "yes" ] && [ "$answer" != "no" ]; do
@@ -117,37 +318,53 @@ else
       done
 
       if [ "$answer" == "no" ]; then
-        read -p "Press [Enter] to exit..."
-        exit 1
+        message "ERROR" "You can't participate without deposit."
       fi
 
       # Deposit
-      iexec account deposit $TODEPOSIT --chain $CHAIN
+      iexec account deposit $TODEPOSIT --wallet-address $WALLET_ADDR --password "$WORKERWALLETPASSWORD"
       checkExitStatus $? "Failed to depoit."
     else
-      echo "You don't need to stake. Your stake is $STAKE."
+      message "OK" "You don't need to stake. Your stake is $STAKE."
     fi
 
+    # Get worker name
+    while [[ ! "$WORKER_NAME" =~ ^[-_A-Za-z0-9]+$ ]]; do
+      read -p "Enter worker name [only letters, numbers, - and _ symbols]: " WORKER_NAME
+    done
+
     # Get last version and run worker
-    echo "Starting iExec worker..."
-    docker pull iexechub/worker:latest
-    docker run --hostname "$workerName" \
-             --env "SCHEDULER_DOMAIN=api-workerdrop-pool.iex.ec" \
-             --env "SCHEDULER_IP=52.52.233.12" \
-             --env "LOGIN=worker" \
-             --env "PASSWORD=K2ovTKF6mfHbDx5kDsyi" \
-             --env "LOGGERLEVEL=INFO" \
-             --env "SHAREDPACKAGES=" \
-             --env "SANDBOXENABLED=true" \
-             --env "BLOCKCHAINETHENABLED=true" \
-             --env "SHAREDAPPS=docker" \
-             --env "TMPDIR=/tmp/iexec-worker-drop" \
-             --env "WALLETPASSWORD=$password" \
-             -v /home/iexec/Desktop/iExec/encrypted-wallet.json:/iexec/wallet/wallet_worker.json \
+    message "INFO" "Creating iExec $WORKER_POOLNAME worker..."
+    docker pull iexechub/iexec-worker:$WORKER_DOCKER_IMAGE_VERSION
+    checkExitStatus $? "Can't pull docker image."
+    docker create --name "$WORKER_POOLNAME-worker" \
+             --hostname "$WORKER_NAME" \
+             --env "IEXEC_CORE_HOST=$IEXEC_CORE_HOST" \
+             --env "IEXEC_CORE_PORT=$IEXEC_CORE_PORT" \
+             --env "IEXEC_WORKER_NAME=$WORKER_NAME" \
+             --env "IEXEC_WORKER_WALLET_PATH=/iexec-wallet/encrypted-wallet.json" \
+             --env "IEXEC_WORKER_WALLET_PASSWORD=$WORKERWALLETPASSWORD" \
+             -v $WALLET_FILE:/iexec-wallet/encrypted-wallet.json \
+             -v /tmp/iexec-worker/${WORKER_NAME}:/tmp/iexec-worker/${WORKER_NAME} \
              -v /var/run/docker.sock:/var/run/docker.sock \
-             -v /tmp/iexec-worker-drop:/tmp/iexec-worker-drop \
-             iexechub/worker:latest
-  fi
+             iexechub/iexec-worker:$WORKER_DOCKER_IMAGE_VERSION
+    checkExitStatus $? "Can't start docker container."
+
+    message "INFO" "Created worker $WORKER_POOLNAME-worker."
+
+    # Attach to worker container
+    while [ "$startworker" != "yes" ] && [ "$startworker" != "no" ]; do
+      read -p "Do you want to start worker? [yes/no] " startworker
+    done
+
+    if [ "$startworker" == "yes" ]; then
+      message "INFO" "Starting worker."
+      docker start $WORKER_POOLNAME-worker
+      message "INFO" "Worker was successfully started."
+    else
+      message "INFO" "You can start the worker later with \"docker start $WORKER_POOLNAME-worker\"."
+    fi
+
 fi
 
 read -p "Press [Enter] to exit..."

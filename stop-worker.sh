@@ -21,7 +21,7 @@ alias iexec='docker run -e DEBUG=$DEBUG --interactive --tty --rm -v $(pwd):/iexe
 echo "Stopping iExec Worker..."
 
 # Make a withdraw
-cd /home/iexec/Desktop/iExec
+cd /tmp/iexec
 
 STAKE=$(iexec account show --chain $CHAIN | grep stake | awk '{print $3}' | sed 's/[^0-9]*//g')
 
@@ -34,16 +34,4 @@ if [ ! -z $STAKE ] && [ $STAKE -ne 0 ]; then
   fi
 fi
 
-# Stop and delete container
-RUNNINGWORKERS=$(docker ps -a --format '{{.Image}} {{.ID}} ')
-
-if [ ! -z "${RUNNINGWORKERS}" ]; then
-  RUNNING_WORKER_ID=$(echo $RUNNINGWORKERS | awk '{print $2}')
-  docker stop $RUNNING_WORKER_ID
-  docker rm $RUNNING_WORKER_ID
-  echo "iExec worker was successfully stopped."
-else
-  echo "iExec worker is not launched."
-fi
-
-read -p "Press [Enter] to exit..."
+/bin/bash /home/iexec/iexec-worker/public/launch-worker.sh --remove
