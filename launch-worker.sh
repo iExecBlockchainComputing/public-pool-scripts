@@ -179,8 +179,10 @@ else
 
     if [ "$DISTRO" == "darwin" ]; then
         files=(/Users/$(whoami)/Library/Ethereum/keystore/*)
+        mkdir -p /Users/$(whoami)/Library/Ethereum/keystore/
     else
         files=(/home/$(whoami)/.ethereum/keystore/*)
+        mkdir -p /home/$(whoami)/.ethereum/keystore/
     fi
 
     for ((i=${#files[@]}-1; i>=0; i--)); do
