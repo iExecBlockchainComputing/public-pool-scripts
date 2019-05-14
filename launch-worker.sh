@@ -332,7 +332,7 @@ else
       fi
 
       # Deposit
-      iexec account deposit $TODEPOSIT --wallet-file $(basename $WALLET_FILE) --password "$WORKERWALLETPASSWORD"
+      iexec account deposit $TODEPOSIT --wallet-file $(basename $WALLET_FILE) --password "$WORKERWALLETPASSWORD" --chain $CHAIN
       checkExitStatus $? "Failed to depoit."
     else
       message "OK" "You don't need to stake. Your stake is $STAKE."
