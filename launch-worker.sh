@@ -135,12 +135,12 @@ if [ ! -z "${RUNNINGWORKERS}" ]; then
 
     # Attach to worker container
     while [ "$attachworker" != "yes" ] && [ "$attachworker" != "no" ]; do
-      read -p "Do you want to attach to your worker? [yes/no] " attachworker
+      read -p "Do you want to see logs of your worker? [yes/no] " attachworker
     done
 
     if [ "$attachworker" == "yes" ]; then
-      message "INFO" "Attaching to worker container."
-      docker container attach $(echo $RUNNINGWORKERS)
+      message "INFO" "Showing logs of worker container."
+      docker container logs $(echo $RUNNINGWORKERS)
     fi
 
 elif [ ! -z "${STOPPEDWORKERS}" ]; then
@@ -159,12 +159,12 @@ elif [ ! -z "${STOPPEDWORKERS}" ]; then
 
         # Attach to worker container
         while [ "$attachworker" != "yes" ] && [ "$attachworker" != "no" ]; do
-          read -p "Do you want to attach to your worker? [yes/no] " attachworker
+          read -p "Do you want to see logs of your worker? [yes/no] " attachworker
         done
 
         if [ "$attachworker" == "yes" ]; then
-          message "INFO" "Attaching to worker container."
-          docker container attach $(echo $STOPPEDWORKERS)
+          message "INFO" "Showing logs of worker container."
+          docker container logs $(echo $STOPPEDWORKERS)
         fi
     fi
 
