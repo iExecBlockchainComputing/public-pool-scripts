@@ -140,7 +140,7 @@ if [ ! -z "${RUNNINGWORKERS}" ]; then
 
     if [ "$attachworker" == "yes" ]; then
       message "INFO" "Showing logs of worker container."
-      docker container logs $(echo $RUNNINGWORKERS)
+      docker container logs -f $(echo $RUNNINGWORKERS)
     fi
 
 elif [ ! -z "${STOPPEDWORKERS}" ]; then
@@ -164,7 +164,7 @@ elif [ ! -z "${STOPPEDWORKERS}" ]; then
 
         if [ "$attachworker" == "yes" ]; then
           message "INFO" "Showing logs of worker container."
-          docker container logs $(echo $STOPPEDWORKERS)
+          docker container logs -f $(echo $STOPPEDWORKERS)
         fi
     fi
 
