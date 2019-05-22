@@ -129,7 +129,7 @@ RUNNINGWORKERS=$(docker ps --format '{{.ID}}' --filter="name=$WORKER_POOLNAME-wo
 STOPPEDWORKERS=$(docker ps --filter "status=exited" --filter "status=created" --format '{{.ID}}' --filter="name=$WORKER_POOLNAME-worker")
 
 DEADWORKERS=$(docker ps --filter "status=dead" --format '{{.ID}}' --filter="name=$WORKER_POOLNAME-worker")
-if [ ! -z "${DEADWORKERS}"]; then
+if [ ! -z "${DEADWORKERS}" ]; then
   docker rm -f $(echo $DEADWORKERS)
 fi
 
