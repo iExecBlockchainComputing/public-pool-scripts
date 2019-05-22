@@ -126,7 +126,12 @@ fi
 
 # Checking containers
 RUNNINGWORKERS=$(docker ps --format '{{.ID}}' --filter="name=$WORKER_POOLNAME-worker")
-STOPPEDWORKERS=$(docker ps --filter "status=exited" --filter "status=created" --filter "status=dead" --format '{{.ID}}' --filter="name=$WORKER_POOLNAME-worker")
+STOPPEDWORKERS=$(docker ps --filter "status=exited" --filter "status=created" --format '{{.ID}}' --filter="name=$WORKER_POOLNAME-worker")
+
+DEADWORKERS=$(docker ps --filter "status=dead" --format '{{.ID}}' --filter="name=$WORKER_POOLNAME-worker")
+if [ ! -z "${DEADWORKERS}"]; Then
+  docker rm -f $(echo $DEADWORKERS)
+fi
 
 # If worker is already running we will just attach to it
 if [ ! -z "${RUNNINGWORKERS}" ]; then
@@ -154,7 +159,7 @@ elif [ ! -z "${STOPPEDWORKERS}" ]; then
 
     if [ "$relaunchworker" == "yes" ]; then
         message "INFO" "Relaunching stopped worker."
-        docker start $(echo $STOPPEDWORKERS)
+          docker start $(echo $STOPPEDWORKERS)
         message "INFO" "Worker was sucessfully started."
 
         # Attach to worker container
