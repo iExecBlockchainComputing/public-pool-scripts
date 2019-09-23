@@ -6,11 +6,14 @@ DEPOSIT=4000000000
 CHAIN=mainnet
 MINETHEREUM=0.1
 HUBCONTRACT=0xb3901d04CF645747b99DBbe8f2eE9cb41A89CeBF
-WORKER_DOCKER_IMAGE_VERSION=3.1.0
+WORKER_DOCKER_IMAGE_VERSION=3.2.0
 IEXEC_CORE_HOST=public-pool.iex.ec
-IEXEC_CORE_PORT=18090
+IEXEC_CORE_PORT=18443
 IEXEC_SDK_VERSION=latest
-
+IEXEC_WORKER_SSL_TRUSTSTORE=/usr/lib/jvm/zulu-11/lib/security/cacerts
+IEXEC_WORKER_SSL_TRUSTSTORE_PASSWORD=changeit
+IEXEC_CORE_PROTOCOL=https
+IEXEC_TEE_ENABLED=false
 # Function that prints messages
 function message() {
   echo "[$1] $2"
@@ -359,6 +362,10 @@ else
              --env "IEXEC_WORKER_NAME=$WORKER_NAME" \
              --env "IEXEC_WORKER_WALLET_PATH=/iexec-wallet/encrypted-wallet.json" \
              --env "IEXEC_WORKER_WALLET_PASSWORD=$WORKERWALLETPASSWORD" \
+             --env "IEXEC_WORKER_SSL_TRUSTSTORE=$IEXEC_WORKER_SSL_TRUSTSTORE" \
+             --env "IEXEC_WORKER_SSL_TRUSTSTORE_PASSWORD=$IEXEC_WORKER_SSL_TRUSTSTORE_PASSWORD" \
+             --env "IEXEC_CORE_PROTOCOL=$IEXEC_CORE_PROTOCOL" \
+             --env "IEXEC_TEE_ENABLED=$IEXEC_TEE_ENABLED" \
              -v $WALLET_FILE:/iexec-wallet/encrypted-wallet.json \
              -v /tmp/iexec-worker/${WORKER_NAME}:/tmp/iexec-worker/${WORKER_NAME} \
              -v /var/run/docker.sock:/var/run/docker.sock \
