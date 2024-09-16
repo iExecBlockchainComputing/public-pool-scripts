@@ -1,3 +1,8 @@
+# Note
+
+This repository is deprecated and is no longer maintained.
+
+
 # workerdrop-scripts-public
 
 # I see transactions who is who? with the first 8 digit you can guess :
